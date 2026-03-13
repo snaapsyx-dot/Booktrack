@@ -597,7 +597,22 @@
             .modal-actions .btn { flex: none; width: 100%; }
         }
 
-        /* ── Book type toggle ── */
+        /* ── Обложка в деталях ── */
+        .book-cover-wrap {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .book-cover-img {
+            max-width: 180px;
+            max-height: 260px;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+            object-fit: cover;
+            border: 2px solid var(--border);
+        }
+
+        /* ── Cover upload label hover ── */
+        #coverUploadLabel:hover { border-color: var(--accent); }
         .book-type-toggle { display:flex; gap:0; border:2px solid var(--border); border-radius:8px; overflow:hidden; }
         .type-btn { flex:1; padding:10px; border:none; background:var(--bg); color:var(--text-muted); font-family:'Playfair Display',serif; font-size:1em; font-weight:700; cursor:pointer; transition:all 0.2s; }
         .type-btn:first-child { border-right:2px solid var(--border); }
@@ -606,6 +621,15 @@
 
         /* ── Multi-achievement form ── */
         .achievements-form-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+
+        /* ── Cover upload ── */
+        .cover-upload-area {
+            border: 2px dashed var(--border); border-radius: 10px;
+            padding: 20px; text-align: center; cursor: pointer;
+            transition: all 0.2s; background: var(--bg);
+        }
+        .cover-upload-area:hover { border-color: var(--accent); background: rgba(212,165,116,0.06); }
+        .cover-upload-area.has-cover { border-style: solid; border-color: var(--secondary); }
         .achievement-row { display: flex; gap: 8px; align-items: center; }
         .achievement-row .form-select { flex: 1; margin-bottom: 0; }
         .remove-ach-btn {
@@ -1058,6 +1082,18 @@
                     <input type="date" id="bookDateEnd" class="form-input">
                 </div>
                 <div class="form-group">
+                    <label class="form-label">Обложка</label>
+                    <div class="cover-upload-area" id="coverUploadArea" onclick="document.getElementById('coverFileInput').click()">
+                        <img id="coverPreview" style="display:none; max-height:160px; max-width:100%; border-radius:6px; margin-bottom:8px;">
+                        <div id="coverUploadPlaceholder">
+                            <div style="font-size:2em; margin-bottom:6px;">📷</div>
+                            <div style="font-size:0.9em; color:var(--text-muted);">Нажми чтобы выбрать обложку</div>
+                        </div>
+                        <input type="file" id="coverFileInput" accept="image/*" style="display:none" onchange="handleCoverSelect(event)">
+                    </div>
+                    <button type="button" id="coverRemoveBtn" style="display:none; margin-top:6px; background:none; border:1.5px solid var(--border); border-radius:6px; padding:6px 12px; cursor:pointer; font-size:0.85em; color:var(--text-muted);" onclick="removeCover()">✕ Убрать обложку</button>
+                </div>
+                <div class="form-group">
                     <label class="form-label">Мнение</label>
                     <textarea id="bookOpinion" class="form-textarea"></textarea>
                 </div>
@@ -1100,7 +1136,7 @@
     </button>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz93DyJACPZiaJM9PRRLeptYDwFaGQ6vlGe8W81J4bz3tNT9sR50jYaJn9MnvHmGoaGQw/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz6sYXpQIc2nCa0N1PSSG_-JNHRPr78O-MlyHzdRCqR7KaJxslP27498NjOBPuLbFr86w/exec';
 
         // ── AUTH ──
         const TOKEN_KEY = 'bk2026_admin_token';
@@ -1144,30 +1180,28 @@
         }
 
         // ── Универсальный fetch с прокси-фоллбеком ──
-        // ── JSONP — единственный надёжный способ вызвать GAS без CORS ──
-        // GET-запросы идут через <script> тег (JSONP), POST — через iframe (уже реализовано)
+        // ── Загрузка данных через GAS (script tag, обходит CORS) ──
         function fetchGAS(url) {
             return new Promise((resolve, reject) => {
-                const cbName = '_gscb' + Date.now() + Math.random().toString(36).slice(2);
                 const script = document.createElement('script');
                 const timer  = setTimeout(() => {
                     cleanup();
                     reject(new Error('timeout'));
-                }, 12000);
+                }, 15000);
 
                 function cleanup() {
                     clearTimeout(timer);
-                    delete window[cbName];
+                    window.__gasCallback = null;
                     if (script.parentNode) script.parentNode.removeChild(script);
                 }
 
-                window[cbName] = function(data) {
+                window.__gasCallback = function(data) {
                     cleanup();
                     resolve(data);
                 };
 
                 script.onerror = () => { cleanup(); reject(new Error('script error')); };
-                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
+                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=__gasCallback';
                 document.head.appendChild(script);
             });
         }
@@ -1613,6 +1647,82 @@
             }
         });
 
+        // ── Обложка книги — сжатый base64 в примечании ячейки ──
+        let coverData = null; // data URL выбранной обложки
+
+        function handleCoverSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const img = new Image();
+                img.onload = function() {
+                    // Сжимаем до 400×560px, quality 0.75 → хорошее качество
+                    const maxW = 400, maxH = 560;
+                    let w = img.width, h = img.height;
+                    if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+                    if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    coverData = canvas.toDataURL('image/jpeg', 0.75);
+                    showCoverPreview(coverData);
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showCoverPreview(src) {
+            document.getElementById('coverPreview').src = src;
+            document.getElementById('coverPreview').style.display = 'block';
+            document.getElementById('coverUploadPlaceholder').style.display = 'none';
+            document.getElementById('coverUploadArea').classList.add('has-cover');
+            document.getElementById('coverRemoveBtn').style.display = 'inline-block';
+        }
+
+        function removeCover() {
+            coverData = null;
+            document.getElementById('coverPreview').style.display = 'none';
+            document.getElementById('coverPreview').src = '';
+            document.getElementById('coverUploadPlaceholder').style.display = 'block';
+            document.getElementById('coverUploadArea').classList.remove('has-cover');
+            document.getElementById('coverRemoveBtn').style.display = 'none';
+            document.getElementById('coverFileInput').value = '';
+        }
+
+        function setCoverPreview(fileId) {
+            coverData = null;
+            if (fileId) showCoverPreview(coverUrl(fileId));
+            else removeCover();
+        }
+
+        function coverUrl(fileId) {
+            if (!fileId) return '';
+            return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w600';
+        }
+
+        // Загружаем обложку на Drive через JSONP после того как знаем num книги
+        async function uploadCoverToDrive(reader, num) {
+            if (!coverData || !adminToken) return;
+            try {
+                const url = APPS_SCRIPT_URL
+                    + '?action=uploadCover'
+                    + '&token=' + encodeURIComponent(adminToken)
+                    + '&reader=' + encodeURIComponent(reader)
+                    + '&num=' + encodeURIComponent(num)
+                    + '&dataUrl=' + encodeURIComponent(coverData);
+                const result = await fetchGAS(url);
+                if (result && result.fileId) {
+                    console.log('Cover uploaded, fileId:', result.fileId);
+                } else {
+                    console.error('Cover upload failed:', result);
+                }
+            } catch(err) {
+                console.error('Cover upload error:', err);
+            }
+        }
+
         // ── БАГ-ФИКС: setBookType с флагом keepPages чтобы не сбрасывать значение при редактировании ──
         function setBookType(type, keepPages = false) {
             const isAudio = type === 'audio';
@@ -1670,6 +1780,7 @@
             const modalBody = document.getElementById('modalBody');
 
             modalBody.innerHTML = `
+                ${(() => { const c = coverUrl(book.coverData); return c ? `<div style="text-align:center;margin-bottom:20px;"><img src="${c}" alt="обложка" style="max-width:220px;max-height:320px;border-radius:10px;object-fit:contain;box-shadow:0 4px 16px rgba(0,0,0,0.15);" onerror="this.parentElement.style.display='none'"></div>` : ''; })()}
                 <div class="book-details">
                     <div class="detail-row"><div class="detail-label">Название:</div><div class="detail-value">${book.title}</div></div>
                     <div class="detail-row"><div class="detail-label">Автор:</div><div class="detail-value">${book.author}</div></div>
@@ -1734,6 +1845,7 @@
             document.getElementById('bookDateStart').value = book.dateStart || '';
             document.getElementById('bookDateEnd').value   = book.dateEnd   || '';
             document.getElementById('bookOpinion').value   = book.opinion   || '';
+            setCoverPreview(book.coverData || '');
 
             document.querySelector('#bookForm button[type="submit"]').dataset.editNum = book.num;
             document.getElementById('editModal').classList.add('active');
@@ -1756,6 +1868,7 @@
             document.getElementById('editModal').classList.remove('active');
             document.getElementById('bookForm').reset();
             document.getElementById('achievementsList').innerHTML = '';
+            removeCover();
             const btn = document.querySelector('#bookForm button[type="submit"]');
             if (btn) delete btn.dataset.editNum;
             currentReader = null;
@@ -1789,9 +1902,22 @@
 
             try {
                 await sendToAppsScript(isEditing ? 'updateBook' : 'addBook', bookData);
+                const savedReader = currentReader;
+                const savedNum    = isEditing || null;
                 closeEditModal();
-                await new Promise(r => setTimeout(r, 1500));
+                await new Promise(r => setTimeout(r, 2000));
                 await loadData();
+                // Загружаем обложку отдельным запросом — теперь знаем num книги
+                if (coverData) {
+                    const books = booksData[savedReader] || [];
+                    const book  = savedNum
+                        ? books.find(b => String(b.num) === String(savedNum))
+                        : books[books.length - 1];
+                    if (book) await uploadCoverToDrive(savedReader, book.num);
+                    // Перезагружаем чтобы показать обложку
+                    if (book) await new Promise(r => setTimeout(r, 1500));
+                    if (book) await loadData();
+                }
             } catch (err) {
                 alert('Ошибка сохранения: ' + err.message);
             } finally {
