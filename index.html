@@ -1136,7 +1136,7 @@
     </button>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz6sYXpQIc2nCa0N1PSSG_-JNHRPr78O-MlyHzdRCqR7KaJxslP27498NjOBPuLbFr86w/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcXEPTH-NQ81Oll7Xl6aittYHPrJYrfOOSqUWdQR9FvrJ2F48PE4Urebeff8cMnl7aNw/exec';
 
         // ── AUTH ──
         const TOKEN_KEY = 'bk2026_admin_token';
@@ -1702,22 +1702,17 @@
             return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w600';
         }
 
-        // Загружаем обложку на Drive через JSONP после того как знаем num книги
+        // Загружаем обложку на Drive через iframe POST (как addBook/updateBook)
         async function uploadCoverToDrive(reader, num) {
             if (!coverData || !adminToken) return;
             try {
-                const url = APPS_SCRIPT_URL
-                    + '?action=uploadCover'
-                    + '&token=' + encodeURIComponent(adminToken)
-                    + '&reader=' + encodeURIComponent(reader)
-                    + '&num=' + encodeURIComponent(num)
-                    + '&dataUrl=' + encodeURIComponent(coverData);
-                const result = await fetchGAS(url);
-                if (result && result.fileId) {
-                    console.log('Cover uploaded, fileId:', result.fileId);
-                } else {
-                    console.error('Cover upload failed:', result);
-                }
+                await sendToAppsScript('uploadCover', {
+                    token:   adminToken,
+                    reader:  reader,
+                    num:     String(num),
+                    dataUrl: coverData
+                });
+                console.log('Cover upload sent for', reader, num);
             } catch(err) {
                 console.error('Cover upload error:', err);
             }
