@@ -1136,7 +1136,7 @@
     </button>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcXEPTH-NQ81Oll7Xl6aittYHPrJYrfOOSqUWdQR9FvrJ2F48PE4Urebeff8cMnl7aNw/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYk_4Sg6VK8UiRqFpiL-Rvpgk4XUbjqjzyT99Y2hgsL5aNnR8829MZYbKrLJdynuvANg/exec';
 
         // ── AUTH ──
         const TOKEN_KEY = 'bk2026_admin_token';
@@ -1896,22 +1896,31 @@
             if (isEditing) bookData.num = isEditing;
 
             try {
+                const savedReader   = currentReader;
+                const savedNum      = isEditing || null;
+                const savedCover    = coverData; // сохраняем ДО closeEditModal который обнуляет coverData
+
                 await sendToAppsScript(isEditing ? 'updateBook' : 'addBook', bookData);
-                const savedReader = currentReader;
-                const savedNum    = isEditing || null;
                 closeEditModal();
                 await new Promise(r => setTimeout(r, 2000));
                 await loadData();
+
                 // Загружаем обложку отдельным запросом — теперь знаем num книги
-                if (coverData) {
+                if (savedCover && adminToken) {
                     const books = booksData[savedReader] || [];
                     const book  = savedNum
                         ? books.find(b => String(b.num) === String(savedNum))
                         : books[books.length - 1];
-                    if (book) await uploadCoverToDrive(savedReader, book.num);
-                    // Перезагружаем чтобы показать обложку
-                    if (book) await new Promise(r => setTimeout(r, 1500));
-                    if (book) await loadData();
+                    if (book) {
+                        await sendToAppsScript('uploadCover', {
+                            token:   adminToken,
+                            reader:  savedReader,
+                            num:     String(book.num),
+                            dataUrl: savedCover
+                        });
+                        await new Promise(r => setTimeout(r, 2000));
+                        await loadData();
+                    }
                 }
             } catch (err) {
                 alert('Ошибка сохранения: ' + err.message);
