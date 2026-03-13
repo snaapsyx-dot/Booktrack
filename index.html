@@ -1183,6 +1183,7 @@
         // ── Загрузка данных через GAS (script tag, обходит CORS) ──
         function fetchGAS(url) {
             return new Promise((resolve, reject) => {
+                const cbName = '__gas_' + Date.now() + '_' + Math.random().toString(36).slice(2);
                 const script = document.createElement('script');
                 const timer  = setTimeout(() => {
                     cleanup();
@@ -1191,17 +1192,17 @@
 
                 function cleanup() {
                     clearTimeout(timer);
-                    window.__gasCallback = null;
+                    delete window[cbName];
                     if (script.parentNode) script.parentNode.removeChild(script);
                 }
 
-                window.__gasCallback = function(data) {
+                window[cbName] = function(data) {
                     cleanup();
                     resolve(data);
                 };
 
                 script.onerror = () => { cleanup(); reject(new Error('script error')); };
-                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=__gasCallback';
+                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
                 document.head.appendChild(script);
             });
         }
