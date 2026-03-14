@@ -1137,7 +1137,7 @@
     </button>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxuRuYl--9JpcDwE8bvPUR408ma8yHcFAhMClCsCRvGowVbuHPD5RT06nwU0m7EU-tqKw/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby5M6gGqnirDw7t-tGPJxUHIfVij71bZRnTcJZiIbOCu5dlkTJfVggqqWlQ8bZiHQ6WFQ/exec';
 
         // ── AUTH ──
         const TOKEN_KEY = 'bk2026_admin_token';
@@ -1988,11 +1988,31 @@
                     console.log('[cover] book found:', book ? book.num : 'NOT FOUND');
                     console.log('[cover] adminToken:', adminToken ? 'OK' : 'MISSING');
                     if (book) {
-                        console.log('[cover] Sending uploadCover for', savedReader, book.num);
-                        // Используем uploadCoverToDrive — она шлёт text/plain no-cors (работает без хостинга)
+                        console.log('[cover] Uploading cover for', savedReader, book.num);
+                        // Шаг 1: загружаем файл на Drive через no-cors (работает стабильно)
                         await uploadCoverToDrive(savedReader, book.num, savedCover);
-                        console.log('[cover] Sent, waiting for GAS to write note...');
-                        await new Promise(r => setTimeout(r, 5000)); // ждём пока GAS запишет fileId в ячейку
+                        console.log('[cover] Upload sent, waiting for Drive...');
+                        await new Promise(r => setTimeout(r, 4000));
+
+                        // Шаг 2: confirmCover через JSONP — он сам найдёт файл на Drive
+                        // и запишет fileId в примечание ячейки. Гораздо надёжнее чем POST.
+                        try {
+                            const confirmUrl = APPS_SCRIPT_URL
+                                + '?action=confirmCover'
+                                + '&reader=' + encodeURIComponent(savedReader)
+                                + '&num='    + encodeURIComponent(String(book.num));
+                            console.log('[cover] Calling confirmCover via JSONP...');
+                            const res = await fetchGAS(confirmUrl);
+                            if (res && res.fileId) {
+                                console.log('[cover] Confirmed! fileId:', res.fileId);
+                            } else {
+                                console.warn('[cover] confirmCover returned:', res);
+                            }
+                        } catch(confErr) {
+                            console.warn('[cover] confirmCover failed:', confErr.message);
+                        }
+
+                        await new Promise(r => setTimeout(r, 1500));
                         await loadData();
                         console.log('[cover] Done');
                     }
