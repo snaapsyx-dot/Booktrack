@@ -1136,7 +1136,7 @@
     </button>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYk_4Sg6VK8UiRqFpiL-Rvpgk4XUbjqjzyT99Y2hgsL5aNnR8829MZYbKrLJdynuvANg/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3PW8LZjpzfG68ZQv8CP_Rtl0g2g6-dfMYQq4Jjjiv-_iiYnqJF_wfrFL7LlpbjNwPXA/exec';
 
         // ── AUTH ──
         const TOKEN_KEY = 'bk2026_admin_token';
@@ -1183,7 +1183,6 @@
         // ── Загрузка данных через GAS (script tag, обходит CORS) ──
         function fetchGAS(url) {
             return new Promise((resolve, reject) => {
-                const cbName = '__gas_' + Date.now() + '_' + Math.random().toString(36).slice(2);
                 const script = document.createElement('script');
                 const timer  = setTimeout(() => {
                     cleanup();
@@ -1192,17 +1191,17 @@
 
                 function cleanup() {
                     clearTimeout(timer);
-                    delete window[cbName];
+                    window.__gasCallback = null;
                     if (script.parentNode) script.parentNode.removeChild(script);
                 }
 
-                window[cbName] = function(data) {
+                window.__gasCallback = function(data) {
                     cleanup();
                     resolve(data);
                 };
 
                 script.onerror = () => { cleanup(); reject(new Error('script error')); };
-                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
+                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=__gasCallback';
                 document.head.appendChild(script);
             });
         }
@@ -1703,17 +1702,22 @@
             return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w600';
         }
 
-        // Загружаем обложку на Drive через iframe POST (как addBook/updateBook)
+        // Загружаем обложку на Drive через JSONP после того как знаем num книги
         async function uploadCoverToDrive(reader, num) {
             if (!coverData || !adminToken) return;
             try {
-                await sendToAppsScript('uploadCover', {
-                    token:   adminToken,
-                    reader:  reader,
-                    num:     String(num),
-                    dataUrl: coverData
-                });
-                console.log('Cover upload sent for', reader, num);
+                const url = APPS_SCRIPT_URL
+                    + '?action=uploadCover'
+                    + '&token=' + encodeURIComponent(adminToken)
+                    + '&reader=' + encodeURIComponent(reader)
+                    + '&num=' + encodeURIComponent(num)
+                    + '&dataUrl=' + encodeURIComponent(coverData);
+                const result = await fetchGAS(url);
+                if (result && result.fileId) {
+                    console.log('Cover uploaded, fileId:', result.fileId);
+                } else {
+                    console.error('Cover upload failed:', result);
+                }
             } catch(err) {
                 console.error('Cover upload error:', err);
             }
@@ -1896,32 +1900,41 @@
             };
             if (isEditing) bookData.num = isEditing;
 
-            try {
-                const savedReader   = currentReader;
-                const savedNum      = isEditing || null;
-                const savedCover    = coverData; // сохраняем ДО closeEditModal который обнуляет coverData
+            // Сохраняем cover ДО closeEditModal — он обнулит coverData
+            const savedCover  = coverData;
+            const savedReader = currentReader;
+            const savedNum    = isEditing || null;
 
+            try {
                 await sendToAppsScript(isEditing ? 'updateBook' : 'addBook', bookData);
                 closeEditModal();
                 await new Promise(r => setTimeout(r, 2000));
                 await loadData();
 
-                // Загружаем обложку отдельным запросом — теперь знаем num книги
+                // Загружаем обложку отдельным запросом
                 if (savedCover && adminToken) {
                     const books = booksData[savedReader] || [];
                     const book  = savedNum
                         ? books.find(b => String(b.num) === String(savedNum))
                         : books[books.length - 1];
+                    console.log('[cover] savedCover length:', savedCover.length);
+                    console.log('[cover] book found:', book ? book.num : 'NOT FOUND');
+                    console.log('[cover] adminToken:', adminToken ? 'OK' : 'MISSING');
                     if (book) {
+                        console.log('[cover] Sending uploadCover for', savedReader, book.num);
                         await sendToAppsScript('uploadCover', {
                             token:   adminToken,
                             reader:  savedReader,
                             num:     String(book.num),
                             dataUrl: savedCover
                         });
-                        await new Promise(r => setTimeout(r, 2000));
+                        console.log('[cover] Sent, waiting...');
+                        await new Promise(r => setTimeout(r, 2500));
                         await loadData();
+                        console.log('[cover] Done');
                     }
+                } else {
+                    console.log('[cover] Skipped — savedCover:', !!savedCover, 'adminToken:', !!adminToken);
                 }
             } catch (err) {
                 alert('Ошибка сохранения: ' + err.message);
