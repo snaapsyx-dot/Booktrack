@@ -1753,13 +1753,14 @@
         }
 
         // Загружаем обложку на Drive через fetch no-cors (единственный способ с локального файла)
-        async function uploadCoverToDrive(reader, num) {
-            if (!coverData) return;
+        async function uploadCoverToDrive(reader, num, coverDataParam) {
+            const dataToUpload = coverDataParam || coverData;
+            if (!dataToUpload) return;
             try {
                 const payload = JSON.stringify({
                     reader:   reader,
                     num:      String(num),
-                    dataUrl:  coverData,
+                    dataUrl:  dataToUpload,
                     token:    adminToken || ''
                 });
 
@@ -1781,7 +1782,7 @@
                 await sendToAppsScript('uploadCover', {
                     reader:  reader,
                     num:     num,
-                    dataUrl: coverData
+                    dataUrl: dataToUpload
                 });
                 console.log('[cover] Sent via iframe form');
             } catch(err) {
@@ -1988,14 +1989,10 @@
                     console.log('[cover] adminToken:', adminToken ? 'OK' : 'MISSING');
                     if (book) {
                         console.log('[cover] Sending uploadCover for', savedReader, book.num);
-                        await sendToAppsScript('uploadCover', {
-                            token:   adminToken,
-                            reader:  savedReader,
-                            num:     String(book.num),
-                            dataUrl: savedCover
-                        });
-                        console.log('[cover] Sent, waiting...');
-                        await new Promise(r => setTimeout(r, 2500));
+                        // Используем uploadCoverToDrive — она шлёт text/plain no-cors (работает без хостинга)
+                        await uploadCoverToDrive(savedReader, book.num, savedCover);
+                        console.log('[cover] Sent, waiting for GAS to write note...');
+                        await new Promise(r => setTimeout(r, 5000)); // ждём пока GAS запишет fileId в ячейку
                         await loadData();
                         console.log('[cover] Done');
                     }
