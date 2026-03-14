@@ -1624,17 +1624,12 @@
                 ? `<div class="book-rating-stripe" style="background:${stripeColor};"></div>`
                 : '';
 
-            // Обложка — если есть fileId, показываем поверх корешка
-            const coverImg = book.coverData
-                ? `<img src="${coverUrl(book.coverData)}" alt="" class="book-cover-img" onerror="this.style.display='none'">`
-                : '';
-
+            // Обложка показывается только в модалке деталей, не на корешке
             return `
                 <div class="book-spine" style="width:${width}px; height:${height}px; background:${spineColor};"
                      onclick="showBookDetails(${index}, '${reader}')">
                     ${achBadge}
-                    ${coverImg}
-                    <div class="book-content" style="${book.coverData ? 'opacity:0' : ''}">
+                    <div class="book-content">
                         <div class="book-title-rotated"><span>${book.title}</span></div>
                         <div class="book-divider"></div>
                         <div class="book-author-rotated">${book.author}</div>
