@@ -1137,7 +1137,7 @@
     </button>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby5M6gGqnirDw7t-tGPJxUHIfVij71bZRnTcJZiIbOCu5dlkTJfVggqqWlQ8bZiHQ6WFQ/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZF4MaKcyvnucdP1h4yS4wWEIreO8e7KHqTd5dHcUDjCZDHNm5ftXJfqZXXA6snsCG4g/exec';
 
         // ── AUTH ──
         const TOKEN_KEY = 'bk2026_admin_token';
@@ -1986,34 +1986,55 @@
                         : books[books.length - 1];
                     console.log('[cover] savedCover length:', savedCover.length);
                     console.log('[cover] book found:', book ? book.num : 'NOT FOUND');
-                    console.log('[cover] adminToken:', adminToken ? 'OK' : 'MISSING');
                     if (book) {
-                        console.log('[cover] Uploading cover for', savedReader, book.num);
-                        // Шаг 1: загружаем файл на Drive через no-cors (работает стабильно)
+                        submitBtn.textContent = 'Загружаю обложку...';
+                        // Шаг 1: загружаем файл на Drive через no-cors
                         await uploadCoverToDrive(savedReader, book.num, savedCover);
                         console.log('[cover] Upload sent, waiting for Drive...');
                         await new Promise(r => setTimeout(r, 4000));
 
-                        // Шаг 2: confirmCover через JSONP — он сам найдёт файл на Drive
-                        // и запишет fileId в примечание ячейки. Гораздо надёжнее чем POST.
+                        // Шаг 2: confirmCover через JSONP — записывает fileId в примечание ячейки
+                        submitBtn.textContent = 'Подтверждаю обложку...';
+                        let confirmedFileId = null;
+                        // Попытка 1
                         try {
                             const confirmUrl = APPS_SCRIPT_URL
                                 + '?action=confirmCover'
                                 + '&reader=' + encodeURIComponent(savedReader)
                                 + '&num='    + encodeURIComponent(String(book.num));
-                            console.log('[cover] Calling confirmCover via JSONP...');
+                            console.log('[cover] Calling confirmCover...', confirmUrl);
                             const res = await fetchGAS(confirmUrl);
                             if (res && res.fileId) {
-                                console.log('[cover] Confirmed! fileId:', res.fileId);
+                                confirmedFileId = res.fileId;
+                                console.log('[cover] Confirmed! fileId:', confirmedFileId);
                             } else {
-                                console.warn('[cover] confirmCover returned:', res);
+                                console.warn('[cover] confirmCover attempt 1 returned:', res);
+                                // Попытка 2 через 3 секунды
+                                await new Promise(r => setTimeout(r, 3000));
+                                const res2 = await fetchGAS(confirmUrl);
+                                if (res2 && res2.fileId) {
+                                    confirmedFileId = res2.fileId;
+                                    console.log('[cover] Confirmed on retry! fileId:', confirmedFileId);
+                                } else {
+                                    console.warn('[cover] confirmCover attempt 2 returned:', res2);
+                                }
                             }
                         } catch(confErr) {
                             console.warn('[cover] confirmCover failed:', confErr.message);
                         }
 
+                        // Шаг 3: если получили fileId — сразу патчим память и перерисовываем
+                        // (не ждём loadData, который может упасть из-за прокси)
+                        if (confirmedFileId) {
+                            book.coverData = confirmedFileId;
+                            renderBookshelves();
+                            renderStats();
+                            console.log('[cover] Patched booksData and re-rendered');
+                        }
+
+                        // Фоновое обновление из таблицы
                         await new Promise(r => setTimeout(r, 1500));
-                        await loadData();
+                        loadData().catch(() => {}); // не блокируем UI
                         console.log('[cover] Done');
                     }
                 } else {
