@@ -1137,7 +1137,7 @@
     </button>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3fPhOOejDVhJ22CCwyolWvBSB8-ZYunHB3N2v6MC8sicytsyb2D6-QaPrANQXTev_IA/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8Ustsd6wj9FQ3zgUKSeDcVgoobDfN9lZDaJacOzsDaZrwhKKKaToXly7--d1NOAWY/exec';
 
         // ── AUTH ──
         const TOKEN_KEY = 'bk2026_admin_token';
@@ -1395,7 +1395,7 @@
 
         // ── Универсальный write через GET/JSONP — единственный надёжный способ с GitHub Pages ──
         async function gasWrite(action, data) {
-            const base = APPS_SCRIPT_URL + '?action=' + action + '&token=' + encodeURIComponent(adminToken || '');
+            const base = APPS_SCRIPT_URL + '?action=' + action + '&k=' + encodeURIComponent(adminToken || '');
 
             let url;
             if (action === 'deleteBook') {
