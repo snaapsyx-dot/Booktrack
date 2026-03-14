@@ -603,12 +603,13 @@
             margin-bottom: 20px;
         }
         .book-cover-img {
-            max-width: 180px;
-            max-height: 260px;
-            border-radius: 10px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            border: 2px solid var(--border);
+            border-radius: 0;
+            z-index: 2;
         }
 
         /* ── Cover upload label hover ── */
@@ -1136,7 +1137,7 @@
     </button>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3PW8LZjpzfG68ZQv8CP_Rtl0g2g6-dfMYQq4Jjjiv-_iiYnqJF_wfrFL7LlpbjNwPXA/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxuRuYl--9JpcDwE8bvPUR408ma8yHcFAhMClCsCRvGowVbuHPD5RT06nwU0m7EU-tqKw/exec';
 
         // ── AUTH ──
         const TOKEN_KEY = 'bk2026_admin_token';
@@ -1179,31 +1180,48 @@
             document.getElementById('loginModal').classList.remove('active');
         }
 
-        // ── Универсальный fetch с прокси-фоллбеком ──
-        // ── Загрузка данных через GAS (script tag, обходит CORS) ──
+        // ── Универсальный fetch: JSONP → прямой fetch → прокси ──
         function fetchGAS(url) {
-            return new Promise((resolve, reject) => {
+            // 1. Пробуем JSONP — единственный метод который работает с origin:null (локальный файл)
+            const jsonpPromise = new Promise((resolve, reject) => {
+                const cbName = '__gasCallback_' + Date.now();
                 const script = document.createElement('script');
                 const timer  = setTimeout(() => {
                     cleanup();
-                    reject(new Error('timeout'));
-                }, 15000);
+                    reject(new Error('jsonp timeout'));
+                }, 15000); // увеличено до 15с — GAS может стартовать долго
 
                 function cleanup() {
                     clearTimeout(timer);
-                    window.__gasCallback = null;
+                    delete window[cbName];
                     if (script.parentNode) script.parentNode.removeChild(script);
                 }
 
-                window.__gasCallback = function(data) {
-                    cleanup();
-                    resolve(data);
-                };
-
+                window[cbName] = function(data) { cleanup(); resolve(data); };
                 script.onerror = () => { cleanup(); reject(new Error('script error')); };
-                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=__gasCallback';
+                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
                 document.head.appendChild(script);
             });
+
+            // 2. Прямой fetch (работает если GAS разрешает CORS)
+            const directPromise = fetch(url)
+                .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+
+            // 3. Прокси allorigins
+            const proxy1Promise = fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url))
+                .then(r => { if (!r.ok) throw new Error('proxy1 ' + r.status); return r.json(); });
+
+            // 4. Прокси corsproxy
+            const proxy2Promise = fetch('https://corsproxy.io/?' + encodeURIComponent(url))
+                .then(r => { if (!r.ok) throw new Error('proxy2 ' + r.status); return r.json(); });
+
+            // 5. Прокси thingproxy
+            const proxy3Promise = fetch('https://thingproxy.freeboard.io/fetch/' + url)
+                .then(r => { if (!r.ok) throw new Error('proxy3 ' + r.status); return r.json(); });
+
+            // Возвращаем первый успешный
+            return Promise.any([jsonpPromise, directPromise, proxy1Promise, proxy2Promise, proxy3Promise])
+                .catch(() => { throw new Error('Нет соединения с сервером'); });
         }
 
         async function submitLogin() {
@@ -1375,41 +1393,67 @@
             return [];
         }
 
-        function sendToAppsScript(action, data) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const iframe = document.createElement('iframe');
-                    iframe.name = 'hidden_iframe_' + Date.now();
-                    iframe.style.display = 'none';
-                    document.body.appendChild(iframe);
+        async function sendToAppsScript(action, data) {
+            const payload = JSON.stringify({ ...data, token: adminToken });
+            const url = APPS_SCRIPT_URL + '?action=' + action;
 
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = APPS_SCRIPT_URL + '?action=' + action;
-                    form.target = iframe.name;
-                    form.style.display = 'none';
+            // Метод 1: обычный fetch с JSON (работает если GAS задеплоен как "Anyone")
+            try {
+                const r = await fetch(url, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    payload
+                });
+                const result = await r.json().catch(() => ({}));
+                console.log('[GAS]', action, result);
+                return result;
+            } catch(e1) {
+                console.warn('[GAS] fetch failed:', e1.message);
+            }
 
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'data';
-                    input.value = JSON.stringify({ ...data, token: adminToken });
-                    form.appendChild(input);
+            // Метод 2: fetch no-cors с text/plain — simple request, preflight не нужен
+            // GAS читает тело через e.postData.contents независимо от Content-Type
+            try {
+                await fetch(url, {
+                    method:  'POST',
+                    mode:    'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body:    payload
+                });
+                console.log('[GAS] no-cors sent:', action);
+                return {};
+            } catch(e2) {
+                console.warn('[GAS] no-cors failed:', e2.message);
+            }
 
-                    document.body.appendChild(form);
+            // Метод 3: iframe-форма (последний фоллбек)
+            return new Promise((resolve) => {
+                const iframeName = 'gas_iframe_' + Date.now();
+                const iframe = document.createElement('iframe');
+                iframe.name = iframeName;
+                iframe.style.cssText = 'display:none;position:fixed;';
+                document.body.appendChild(iframe);
 
-                    iframe.onload = () => {
-                        setTimeout(() => {
-                            if (document.body.contains(form)) document.body.removeChild(form);
-                            if (document.body.contains(iframe)) document.body.removeChild(iframe);
-                        }, 2000);
-                        resolve();
-                    };
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = url;
+                form.target = iframeName;
+                form.style.display = 'none';
 
-                    form.submit();
-                    setTimeout(resolve, 3000);
-                } catch (err) {
-                    reject(err);
-                }
+                const input = document.createElement('input');
+                input.type  = 'hidden';
+                input.name  = 'data';
+                input.value = payload;
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+                console.log('[GAS] iframe form submitted:', action);
+
+                setTimeout(() => {
+                    try { document.body.removeChild(form); } catch(e) {}
+                    try { document.body.removeChild(iframe); } catch(e) {}
+                    resolve({});
+                }, 2000);
             });
         }
 
@@ -1419,7 +1463,7 @@
             document.getElementById('bookshelves-container').innerHTML = '<div class="loading">Загрузка книг...</div>';
 
             try {
-                const result = await fetchGAS(APPS_SCRIPT_URL + '?action=getBooks');
+                const result = await fetchGAS(APPS_SCRIPT_URL + '?action=getBooks&_=' + Date.now());
                 if (result && !result.error) {
                     booksData.winnie = result.winnie || [];
                     booksData.artem  = result.artem  || [];
@@ -1580,11 +1624,17 @@
                 ? `<div class="book-rating-stripe" style="background:${stripeColor};"></div>`
                 : '';
 
+            // Обложка — если есть fileId, показываем поверх корешка
+            const coverImg = book.coverData
+                ? `<img src="${coverUrl(book.coverData)}" alt="" class="book-cover-img" onerror="this.style.display='none'">`
+                : '';
+
             return `
                 <div class="book-spine" style="width:${width}px; height:${height}px; background:${spineColor};"
                      onclick="showBookDetails(${index}, '${reader}')">
                     ${achBadge}
-                    <div class="book-content">
+                    ${coverImg}
+                    <div class="book-content" style="${book.coverData ? 'opacity:0' : ''}">
                         <div class="book-title-rotated"><span>${book.title}</span></div>
                         <div class="book-divider"></div>
                         <div class="book-author-rotated">${book.author}</div>
@@ -1702,24 +1752,40 @@
             return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w600';
         }
 
-        // Загружаем обложку на Drive через JSONP после того как знаем num книги
+        // Загружаем обложку на Drive через fetch no-cors (единственный способ с локального файла)
         async function uploadCoverToDrive(reader, num) {
-            if (!coverData || !adminToken) return;
+            if (!coverData) return;
             try {
-                const url = APPS_SCRIPT_URL
-                    + '?action=uploadCover'
-                    + '&token=' + encodeURIComponent(adminToken)
-                    + '&reader=' + encodeURIComponent(reader)
-                    + '&num=' + encodeURIComponent(num)
-                    + '&dataUrl=' + encodeURIComponent(coverData);
-                const result = await fetchGAS(url);
-                if (result && result.fileId) {
-                    console.log('Cover uploaded, fileId:', result.fileId);
-                } else {
-                    console.error('Cover upload failed:', result);
+                const payload = JSON.stringify({
+                    reader:   reader,
+                    num:      String(num),
+                    dataUrl:  coverData,
+                    token:    adminToken || ''
+                });
+
+                // Метод 1: прямой fetch no-cors — данные доходят, ответ непрозрачен (это нормально)
+                try {
+                    await fetch(APPS_SCRIPT_URL + '?action=uploadCover', {
+                        method: 'POST',
+                        mode:   'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: payload
+                    });
+                    console.log('[cover] Sent via no-cors fetch');
+                    return;
+                } catch(e1) {
+                    console.warn('[cover] no-cors failed, trying iframe...', e1);
                 }
+
+                // Метод 2: iframe-форма (фоллбек)
+                await sendToAppsScript('uploadCover', {
+                    reader:  reader,
+                    num:     num,
+                    dataUrl: coverData
+                });
+                console.log('[cover] Sent via iframe form');
             } catch(err) {
-                console.error('Cover upload error:', err);
+                console.error('[cover] Upload error:', err);
             }
         }
 
@@ -1908,7 +1974,7 @@
             try {
                 await sendToAppsScript(isEditing ? 'updateBook' : 'addBook', bookData);
                 closeEditModal();
-                await new Promise(r => setTimeout(r, 2000));
+                await new Promise(r => setTimeout(r, 6000)); // ждём пока GAS запишет в таблицу
                 await loadData();
 
                 // Загружаем обложку отдельным запросом
