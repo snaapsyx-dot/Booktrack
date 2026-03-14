@@ -1137,7 +1137,7 @@
     </button>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZF4MaKcyvnucdP1h4yS4wWEIreO8e7KHqTd5dHcUDjCZDHNm5ftXJfqZXXA6snsCG4g/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3fPhOOejDVhJ22CCwyolWvBSB8-ZYunHB3N2v6MC8sicytsyb2D6-QaPrANQXTev_IA/exec';
 
         // ── AUTH ──
         const TOKEN_KEY = 'bk2026_admin_token';
@@ -1393,68 +1393,20 @@
             return [];
         }
 
-        async function sendToAppsScript(action, data) {
-            const payload = JSON.stringify({ ...data, token: adminToken });
-            const url = APPS_SCRIPT_URL + '?action=' + action;
+        // ── Универсальный write через GET/JSONP — единственный надёжный способ с GitHub Pages ──
+        async function gasWrite(action, data) {
+            const base = APPS_SCRIPT_URL + '?action=' + action + '&token=' + encodeURIComponent(adminToken || '');
 
-            // Метод 1: обычный fetch с JSON (работает если GAS задеплоен как "Anyone")
-            try {
-                const r = await fetch(url, {
-                    method:  'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body:    payload
-                });
-                const result = await r.json().catch(() => ({}));
-                console.log('[GAS]', action, result);
-                return result;
-            } catch(e1) {
-                console.warn('[GAS] fetch failed:', e1.message);
+            if (action === 'deleteBook') {
+                const url = base
+                    + '&num='    + encodeURIComponent(data.num)
+                    + '&reader=' + encodeURIComponent(data.reader);
+                return fetchGAS(url);
             }
 
-            // Метод 2: fetch no-cors с text/plain — simple request, preflight не нужен
-            // GAS читает тело через e.postData.contents независимо от Content-Type
-            try {
-                await fetch(url, {
-                    method:  'POST',
-                    mode:    'no-cors',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body:    payload
-                });
-                console.log('[GAS] no-cors sent:', action);
-                return {};
-            } catch(e2) {
-                console.warn('[GAS] no-cors failed:', e2.message);
-            }
-
-            // Метод 3: iframe-форма (последний фоллбек)
-            return new Promise((resolve) => {
-                const iframeName = 'gas_iframe_' + Date.now();
-                const iframe = document.createElement('iframe');
-                iframe.name = iframeName;
-                iframe.style.cssText = 'display:none;position:fixed;';
-                document.body.appendChild(iframe);
-
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = url;
-                form.target = iframeName;
-                form.style.display = 'none';
-
-                const input = document.createElement('input');
-                input.type  = 'hidden';
-                input.name  = 'data';
-                input.value = payload;
-                form.appendChild(input);
-                document.body.appendChild(form);
-                form.submit();
-                console.log('[GAS] iframe form submitted:', action);
-
-                setTimeout(() => {
-                    try { document.body.removeChild(form); } catch(e) {}
-                    try { document.body.removeChild(iframe); } catch(e) {}
-                    resolve({});
-                }, 2000);
-            });
+            // addBook / updateBook — данные в ?data=
+            const url = base + '&data=' + encodeURIComponent(JSON.stringify(data));
+            return fetchGAS(url);
         }
 
         async function loadData() {
@@ -1774,11 +1726,18 @@
                 }
 
                 // Метод 2: iframe-форма (фоллбек)
-                await sendToAppsScript('uploadCover', {
-                    reader:  reader,
-                    num:     num,
-                    dataUrl: dataToUpload
-                });
+                const iframeName = 'gas_cover_' + Date.now();
+                const iframe = document.createElement('iframe');
+                iframe.name = iframeName; iframe.style.cssText = 'display:none;position:fixed;';
+                document.body.appendChild(iframe);
+                const form = document.createElement('form');
+                form.method = 'POST'; form.action = APPS_SCRIPT_URL + '?action=uploadCover';
+                form.target = iframeName; form.style.display = 'none';
+                const inp = document.createElement('input');
+                inp.type = 'hidden'; inp.name = 'data';
+                inp.value = JSON.stringify({ reader, num: String(num), dataUrl: dataToUpload, token: adminToken || '' });
+                form.appendChild(inp); document.body.appendChild(form); form.submit();
+                setTimeout(() => { try { document.body.removeChild(form); document.body.removeChild(iframe); } catch(e) {} }, 3000);
                 console.log('[cover] Sent via iframe form');
             } catch(err) {
                 console.error('[cover] Upload error:', err);
@@ -1917,7 +1876,7 @@
             if (!confirm('Удалить книгу?')) return;
             closeModal();
             try {
-                await sendToAppsScript('deleteBook', { num, reader });
+                await gasWrite('deleteBook', { num, reader });
                 // Сразу убираем из памяти — не ждём loadData который может упасть из-за прокси
                 booksData[reader] = booksData[reader].filter(b => String(b.num) !== String(num));
                 renderBookshelves();
@@ -1973,7 +1932,7 @@
             const savedNum    = isEditing || null;
 
             try {
-                await sendToAppsScript(isEditing ? 'updateBook' : 'addBook', bookData);
+                await gasWrite(isEditing ? 'updateBook' : 'addBook', bookData);
                 closeEditModal();
 
                 // Оптимистично обновляем данные в памяти — не ждём GAS
