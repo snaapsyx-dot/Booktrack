@@ -1397,16 +1397,23 @@
         async function gasWrite(action, data) {
             const base = APPS_SCRIPT_URL + '?action=' + action + '&token=' + encodeURIComponent(adminToken || '');
 
+            let url;
             if (action === 'deleteBook') {
-                const url = base
+                url = base
                     + '&num='    + encodeURIComponent(data.num)
                     + '&reader=' + encodeURIComponent(data.reader);
-                return fetchGAS(url);
+            } else {
+                url = base + '&data=' + encodeURIComponent(JSON.stringify(data));
             }
 
-            // addBook / updateBook — данные в ?data=
-            const url = base + '&data=' + encodeURIComponent(JSON.stringify(data));
-            return fetchGAS(url);
+            console.log('[gasWrite] calling:', action, url);
+            const result = await fetchGAS(url);
+            console.log('[gasWrite] response:', action, JSON.stringify(result));
+
+            if (result && result.error) {
+                throw new Error(action + ' failed: ' + result.error);
+            }
+            return result;
         }
 
         async function loadData() {
@@ -1876,8 +1883,9 @@
             if (!confirm('Удалить книгу?')) return;
             closeModal();
             try {
-                await gasWrite('deleteBook', { num, reader });
-                // Сразу убираем из памяти — не ждём loadData который может упасть из-за прокси
+                const res = await gasWrite('deleteBook', { num, reader });
+                console.log('[deleteBook] success:', res);
+                // Сразу убираем из памяти
                 booksData[reader] = booksData[reader].filter(b => String(b.num) !== String(num));
                 renderBookshelves();
                 renderStats();
@@ -1885,7 +1893,9 @@
                 await new Promise(r => setTimeout(r, 2000));
                 loadData().catch(() => {});
             } catch (err) {
-                alert('Ошибка: ' + err.message);
+                console.error('[deleteBook] error:', err.message);
+                alert('Ошибка удаления: ' + err.message);
+                loadData().catch(() => {}); // восстанавливаем экран
             }
         }
 
