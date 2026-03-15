@@ -1543,8 +1543,9 @@
                     <div class="stats-bar">
                         <div class="stat-item"><span class="stat-value">${wStats.count}</span><span class="stat-label">Книг</span></div>
                         <div class="stat-item"><span class="stat-value">${wStats.pages}</span><span class="stat-label">Страниц</span></div>
-                        <div class="stat-item"><span class="stat-value">${wStats.cash}₽</span><span class="stat-label">Кэш</span></div>
-                        <div class="stat-item"><span class="stat-value">${wStats.achievements}</span><span class="stat-label">Очки ачивок</span></div>
+                        <div class="stat-item"><span class="stat-value">${wStats.cash}₽</span><span class="stat-label">Заработано</span></div>
+                        <div class="stat-item"><span class="stat-value">${wStats.achievements}₽</span><span class="stat-label">Бонус от ачивок</span></div>
+                        <div class="stat-item"><span class="stat-value">${(parseFloat(wStats.cash) + wStats.achievements).toFixed(2)}₽</span><span class="stat-label">Итого</span></div>
                     </div>
                     <div class="shelf-outer" id="outer-winnie">
                         <div class="bookshelf-books" id="shelf-winnie">
@@ -1568,8 +1569,9 @@
                     <div class="stats-bar">
                         <div class="stat-item"><span class="stat-value">${aStats.count}</span><span class="stat-label">Книг</span></div>
                         <div class="stat-item"><span class="stat-value">${aStats.pages}</span><span class="stat-label">Страниц</span></div>
-                        <div class="stat-item"><span class="stat-value">${aStats.cash}₽</span><span class="stat-label">Кэш</span></div>
-                        <div class="stat-item"><span class="stat-value">${aStats.achievements}</span><span class="stat-label">Очки ачивок</span></div>
+                        <div class="stat-item"><span class="stat-value">${aStats.cash}₽</span><span class="stat-label">Заработано</span></div>
+                        <div class="stat-item"><span class="stat-value">${aStats.achievements}₽</span><span class="stat-label">Бонус от ачивок</span></div>
+                        <div class="stat-item"><span class="stat-value">${(parseFloat(aStats.cash) + aStats.achievements).toFixed(2)}₽</span><span class="stat-label">Итого</span></div>
                     </div>
                     <div class="shelf-outer" id="outer-artem">
                         <div class="bookshelf-books" id="shelf-artem">
@@ -2147,11 +2149,13 @@
                 pages: wS.pages + aS.pages,
                 cash:  (parseFloat(wS.cash) + parseFloat(aS.cash)).toFixed(2)
             };
-            const balance    = parseFloat(wS.cash) - parseFloat(aS.cash);
+            const wTotal  = parseFloat(wS.cash) + wS.achievements;
+            const aTotal  = parseFloat(aS.cash) + aS.achievements;
+            const balance = wTotal - aTotal;
             // Winnieshe4k0 слева, Артём справа.
             // balance > 0 → Winnie лидирует → бегунок влево (< 50%)
             // balance < 0 → Артём лидирует → бегунок вправо (> 50%)
-            const ropeMax    = parseFloat(total.cash) || 1;
+            const ropeMax    = (wTotal + aTotal) || 1;
             const ropeOffset = (balance / ropeMax) * 50;
             const knobLeft   = Math.min(95, Math.max(5, 50 - ropeOffset));
             const diffLabel  = balance === 0 ? 'Ничья' : (Math.abs(balance).toFixed(2) + '₽');
@@ -2168,6 +2172,8 @@
                     <div class="detail-row"><div class="detail-label">📖 Всего книг:</div><div class="detail-value">${total.books}</div></div>
                     <div class="detail-row"><div class="detail-label">📄 Всего страниц:</div><div class="detail-value">${total.pages}</div></div>
                     <div class="detail-row"><div class="detail-label">💰 Общий кэш:</div><div class="detail-value">${total.cash}₽</div></div>
+                    <div class="detail-row"><div class="detail-label">🏆 Общий бонус от ачивок:</div><div class="detail-value">${wS.achievements + aS.achievements}₽</div></div>
+                    <div class="detail-row"><div class="detail-label">💎 Общий итог:</div><div class="detail-value">${(wTotal + aTotal).toFixed(2)}₽</div></div>
                     <div class="detail-row"><div class="detail-label">📏 Средняя толщина книги:</div><div class="detail-value">${avgPages} стр.</div></div>
                     <div class="detail-row"><div class="detail-label">🐻 Среднее время чтения Winnieshe4k0:</div><div class="detail-value">${avgReadingDays(booksData.winnie)}</div></div>
                     <div class="detail-row"><div class="detail-label">🐺 Среднее время чтения Артём Ж:</div><div class="detail-value">${avgReadingDays(booksData.artem)}</div></div>
