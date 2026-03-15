@@ -1853,6 +1853,11 @@
 
         function openEditBookModal(index, reader) {
             closeModal();
+            // Сбрасываем форму и editNum — на случай если предыдущая сессия осталась
+            document.getElementById('bookForm').reset();
+            const prevBtn = document.querySelector('#bookForm button[type="submit"]');
+            if (prevBtn) delete prevBtn.dataset.editNum;
+
             currentReader = reader;
             const book = booksData[reader][index];
 
@@ -1916,7 +1921,12 @@
             submitBtn.textContent = 'Сохраняю...';
             submitBtn.disabled = true;
 
-            const isEditing  = submitBtn.dataset.editNum;
+            // editNum может быть числом из таблицы — приводим к строке явно
+            const rawEditNum = submitBtn.dataset.editNum;
+            const isEditing  = rawEditNum && String(rawEditNum).trim() !== '' && String(rawEditNum) !== 'undefined'
+                ? String(rawEditNum)
+                : null;
+            console.log('[submit] isEditing:', isEditing, '| raw editNum:', rawEditNum);
             const isAudio    = document.getElementById('bookIsAudio').value === 'true';
             const rawInput   = parseFloat(document.getElementById('bookPages').value) || 0;
             const pages      = isAudio ? Math.round(rawInput * 0.667) : rawInput;
@@ -1935,6 +1945,7 @@
                 opinion:      document.getElementById('bookOpinion').value,
             };
             if (isEditing) bookData.num = isEditing;
+            console.log('[submit] action:', isEditing ? 'updateBook #' + isEditing : 'addBook');
 
             // Сохраняем cover ДО closeEditModal — он обнулит coverData
             const savedCover  = coverData;
