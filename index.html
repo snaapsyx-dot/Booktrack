@@ -198,6 +198,7 @@
         .rate-block {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 24px;
             padding: 14px 24px;
             background: var(--card);
@@ -214,6 +215,15 @@
             color: var(--primary);
             white-space: nowrap;
         }
+        .rate-title-sub {
+            font-family: 'Crimson Text', serif;
+            font-size: 0.78em;
+            font-weight: 400;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-left: 8px;
+            white-space: normal;
+        }
         .rate-items { display: flex; gap: 28px; flex-wrap: wrap; }
         .rate-item { display: flex; align-items: center; gap: 10px; }
         .rate-label { font-size: 0.95em; color: var(--text-muted); }
@@ -223,6 +233,47 @@
             font-weight: 900;
             color: var(--secondary);
         }
+
+        /* ── BOOKS INFO ROW (награды + шкала) ── */
+        .books-info-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+        .books-info-row .rate-block { margin-bottom: 0; flex: 1; min-width: 260px; }
+        .awards-items { flex-direction: column; gap: 10px !important; }
+        .award-row { align-items: flex-start !important; gap: 12px !important; }
+        .award-row-icon { font-size: 1.5em; flex-shrink: 0; line-height: 1.3; }
+        .award-row-cat { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--primary); font-size: 0.95em; }
+        .award-row-book { color: var(--text-muted); font-style: italic; font-size: 0.88em; margin-top: 2px; }
+        .awards-block { flex-direction: column !important; align-items: stretch !important; }
+        .awards-title-centered { text-align: center; width: 100%; }
+        .awards-footnote { text-align: center; font-family: 'Crimson Text', serif; font-style: italic; font-size: 0.88em; color: var(--text-muted); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+        /* ── ШКАЛА ОЦЕНОК ── */
+        .scale-block { align-items: flex-start !important; }
+        .scale-inner { display: flex; gap: 12px; align-items: stretch; width: 100%; }
+        .scale-arrows {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+            flex-shrink: 0;
+            gap: 4px;
+        }
+        .scale-arrow-top, .scale-arrow-bot { font-size: 1.4em; line-height: 1; }
+        .scale-arrow-line {
+            flex: 1;
+            width: 2px;
+            background: linear-gradient(180deg, var(--rating-great), var(--rating-good), var(--rating-ok), var(--rating-bad), var(--rating-awful));
+            border-radius: 2px;
+            min-height: 20px;
+        }
+        .scale-items { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        .scale-item { display: flex; align-items: center; gap: 10px; font-size: 0.95em; color: var(--text); }
+        .color-box { width: 28px; height: 28px; border-radius: 5px; border: 2px solid var(--border); flex-shrink: 0; }
 
         /* ── BOOKSHELF SECTION ── */
         .bookshelf { margin-bottom: 60px; }
@@ -912,10 +963,9 @@
                 <span id="authBtnText">Войти</span>
             </button>
             <div class="tabs">
-                <button class="tab active" onclick="switchTab('books', event)">Книги</button>
-                <button class="tab" onclick="switchTab('achievements', event)">Ачивки</button>
-                <button class="tab" onclick="switchTab('awards', event)">Награды</button>
-                <button class="tab" onclick="switchTab('stats', event)">Статистика</button>
+                <button class="tab active" onclick="switchTab('books', event)">📚 Книги</button>
+                <button class="tab" onclick="switchTab('achievements', event)">🏆 Ачивки</button>
+                <button class="tab" onclick="switchTab('stats', event)">📊 Статистика</button>
                 <button class="tab" onclick="switchTab('library', event)">📜 Библиотека</button>
             </div>
             <button class="duel-toggle-btn active" id="duelToggleBtn" onclick="toggleDuel()" style="display:none">⚔️ Ход дуэли: вкл</button>
@@ -936,6 +986,46 @@
                     </div>
                 </div>
             </div>
+            <!-- Награды + Шкала оценок -->
+            <div class="books-info-row">
+                <div class="rate-block awards-block">
+                    <div class="rate-title awards-title-centered">🏆 Награды 2026</div>
+                    <div class="rate-items awards-items">
+                        <div class="rate-item award-row">
+                            <span class="award-row-icon">❤️</span>
+                            <div><div class="award-row-cat">Лучшая художественная</div></div>
+                        </div>
+                        <div class="rate-item award-row">
+                            <span class="award-row-icon">💙</span>
+                            <div><div class="award-row-cat">Лучшая нехудожественная</div></div>
+                        </div>
+                        <div class="rate-item award-row">
+                            <span class="award-row-icon">💩</span>
+                            <div><div class="award-row-cat">Нечитаемо</div></div>
+                        </div>
+                    </div>
+                    <div class="awards-footnote">Будет определено по итогам года</div>
+                </div>
+
+                <div class="rate-block scale-block">
+                    <div class="rate-title">🎨 Шкала оценок книг</div>
+                    <div class="scale-inner">
+                        <div class="scale-arrows">
+                            <span class="scale-arrow-top">👍</span>
+                            <div class="scale-arrow-line"></div>
+                            <span class="scale-arrow-bot">👎</span>
+                        </div>
+                        <div class="scale-items">
+                            <div class="scale-item"><div class="color-box" style="background:var(--rating-great);"></div><span>Отличная (9-10)</span></div>
+                            <div class="scale-item"><div class="color-box" style="background:var(--rating-good);"></div><span>Хорошая (7-8)</span></div>
+                            <div class="scale-item"><div class="color-box" style="background:var(--rating-ok);"></div><span>Обычная (4-6)</span></div>
+                            <div class="scale-item"><div class="color-box" style="background:var(--rating-bad);"></div><span>Плохая (2-3)</span></div>
+                            <div class="scale-item"><div class="color-box" style="background:var(--rating-awful);"></div><span>Ужасная (0-1)</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="bookshelves-container">
                 <div class="loading">Загрузка книг...</div>
             </div>
@@ -946,57 +1036,7 @@
             <div class="achievements-grid" id="achievements-list"></div>
         </div>
 
-        <!-- Awards Section -->
-        <div id="awards" class="content-section">
-            <div class="awards-section">
-                <h2 class="awards-title">🏆 Награды Года 2026</h2>
-                <div class="award-item">
-                    <div class="award-icon">❤️</div>
-                    <div class="award-details">
-                        <div class="award-category">Лучшая художественная книга</div>
-                        <div class="award-book">Будет определена по итогам года</div>
-                    </div>
-                </div>
-                <div class="award-item">
-                    <div class="award-icon">💙</div>
-                    <div class="award-details">
-                        <div class="award-category">Лучшая нехудожественная книга</div>
-                        <div class="award-book">Будет определена по итогам года</div>
-                    </div>
-                </div>
-                <div class="award-item">
-                    <div class="award-icon">💩</div>
-                    <div class="award-details">
-                        <div class="award-category">Нечитаемо</div>
-                        <div class="award-book">Будет определена по итогам года</div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="rating-legend">
-                <h3 class="legend-title">Шкала оценок книг</h3>
-                <div class="legend-item">
-                    <div class="color-box" style="background: var(--rating-great);"></div>
-                    <span>Отличная (9-10)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="color-box" style="background: var(--rating-good);"></div>
-                    <span>Хорошая (7-8)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="color-box" style="background: var(--rating-ok);"></div>
-                    <span>Обычная (4-6)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="color-box" style="background: var(--rating-bad);"></div>
-                    <span>Плохая (2-3)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="color-box" style="background: var(--rating-awful);"></div>
-                    <span>Ужасная (0-1)</span>
-                </div>
-            </div>
-        </div>
 
         <!-- Stats Section -->
         <div id="stats" class="content-section">
@@ -1453,8 +1493,8 @@
             if (print.length) {
                 pageRate = print.reduce((s,b) => s + parseFloat(b.cash), 0) / print.reduce((s,b) => s + parseInt(b.pages), 0);
             }
-            document.getElementById('rate-page').textContent  = pageRate ? pageRate.toFixed(4) + ' ₽' : '—';
-            document.getElementById('rate-audio').textContent = pageRate ? (pageRate * 0.667).toFixed(4) + ' ₽' : '—';
+            document.getElementById('rate-page').textContent  = '0.35 ₽';
+            document.getElementById('rate-audio').textContent = '0.25 ₽';
         }
 
         function renderBookshelves() {
@@ -1770,7 +1810,7 @@
                 const isAudio = document.getElementById('bookIsAudio').value === 'true';
                 const conv = document.getElementById('pagesConverted');
                 if (isAudio && this.value) {
-                    conv.textContent = `≈ ${Math.round(parseFloat(this.value) * 0.667)} страниц`;
+                    conv.textContent = `≈ ${Math.round(parseFloat(this.value) * 0.7143)} страниц`;
                     conv.style.display = 'block';
                 } else {
                     conv.style.display = 'none';
@@ -1929,7 +1969,7 @@
             console.log('[submit] isEditing:', isEditing, '| raw editNum:', rawEditNum);
             const isAudio    = document.getElementById('bookIsAudio').value === 'true';
             const rawInput   = parseFloat(document.getElementById('bookPages').value) || 0;
-            const pages      = isAudio ? Math.round(rawInput * 0.667) : rawInput;
+            const pages      = isAudio ? Math.round(rawInput * 0.7143) : rawInput;
             const selectedAchs = getSelectedAchievements();
 
             const bookData = {
@@ -2058,7 +2098,7 @@
         }
 
         function pagestoHM(pages) {
-            const mins = Math.round(parseInt(pages) / 0.667);
+            const mins = Math.round(parseInt(pages) / 0.7143);
             const h = Math.floor(mins / 60), m = mins % 60;
             return h > 0 ? `${h} ч ${m} мин` : `${m} мин`;
         }
@@ -2096,12 +2136,12 @@
             container.innerHTML = `
                 <div class="stat-card-large">
                     <h2 class="stat-card-title">📊 Общая статистика</h2>
-                    <div class="detail-row"><div class="detail-label">Всего книг:</div><div class="detail-value">${total.books}</div></div>
-                    <div class="detail-row"><div class="detail-label">Всего страниц:</div><div class="detail-value">${total.pages}</div></div>
-                    <div class="detail-row"><div class="detail-label">Общий кэш:</div><div class="detail-value">${total.cash}₽</div></div>
-                    <div class="detail-row"><div class="detail-label">Средняя толщина книги:</div><div class="detail-value">${avgPages} стр.</div></div>
-                    <div class="detail-row"><div class="detail-label">Среднее время чтения Winnieshe4k0:</div><div class="detail-value">${avgReadingDays(booksData.winnie)}</div></div>
-                    <div class="detail-row"><div class="detail-label">Среднее время чтения Артём Ж:</div><div class="detail-value">${avgReadingDays(booksData.artem)}</div></div>
+                    <div class="detail-row"><div class="detail-label">📖 Всего книг:</div><div class="detail-value">${total.books}</div></div>
+                    <div class="detail-row"><div class="detail-label">📄 Всего страниц:</div><div class="detail-value">${total.pages}</div></div>
+                    <div class="detail-row"><div class="detail-label">💰 Общий кэш:</div><div class="detail-value">${total.cash}₽</div></div>
+                    <div class="detail-row"><div class="detail-label">📏 Средняя толщина книги:</div><div class="detail-value">${avgPages} стр.</div></div>
+                    <div class="detail-row"><div class="detail-label">🐻 Среднее время чтения Winnieshe4k0:</div><div class="detail-value">${avgReadingDays(booksData.winnie)}</div></div>
+                    <div class="detail-row"><div class="detail-label">🐺 Среднее время чтения Артём Ж:</div><div class="detail-value">${avgReadingDays(booksData.artem)}</div></div>
                     <div style="margin-top:25px;">
                         <h3 style="font-family:'Playfair Display',serif; margin-bottom:15px;">Баланс</h3>
                         <div class="tug-wrap">
@@ -2119,11 +2159,11 @@
                 </div>
                 <div class="stat-card-large">
                     <h2 class="stat-card-title">⚡ Рекорды</h2>
-                    <div class="detail-row"><div class="detail-label">Лидер по книгам:</div><div class="detail-value">${leaderLabel(wS.count, aS.count)}</div></div>
-                    <div class="detail-row"><div class="detail-label">Лидер по страницам:</div><div class="detail-value">${leaderLabel(wS.pages, aS.pages)}</div></div>
-                    <div class="detail-row"><div class="detail-label">Лидер по ачивкам:</div><div class="detail-value">${leaderLabel(wS.achievements, aS.achievements)}</div></div>
-                    <div class="detail-row"><div class="detail-label">Самая толстая книга:</div><div class="detail-value">${fatLabel}</div></div>
-                    <div class="detail-row"><div class="detail-label">Самая длинная аудиокнига:</div><div class="detail-value">${audioLabel}</div></div>
+                    <div class="detail-row"><div class="detail-label">📖 Лидер по книгам:</div><div class="detail-value">${leaderLabel(wS.count, aS.count)}</div></div>
+                    <div class="detail-row"><div class="detail-label">📄 Лидер по страницам:</div><div class="detail-value">${leaderLabel(wS.pages, aS.pages)}</div></div>
+                    <div class="detail-row"><div class="detail-label">🏆 Лидер по ачивкам:</div><div class="detail-value">${leaderLabel(wS.achievements, aS.achievements)}</div></div>
+                    <div class="detail-row"><div class="detail-label">🐘 Самая толстая книга:</div><div class="detail-value">${fatLabel}</div></div>
+                    <div class="detail-row"><div class="detail-label">🎧 Самая длинная аудиокнига:</div><div class="detail-value">${audioLabel}</div></div>
                 </div>`;
         }
 
