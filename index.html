@@ -104,24 +104,24 @@
 
         /* ── ADMIN AUTH ── */
         .auth-btn {
-            position: absolute;
-            left: 0;
-            padding: 10px 18px;
+            padding: 13px 24px;
             border-radius: 8px;
             border: 2px solid var(--border);
             background: var(--card);
             font-family: 'Playfair Display', serif;
-            font-size: 0.9em;
+            font-size: 1.1em;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s ease;
             display: flex;
             align-items: center;
             gap: 7px;
-            color: var(--text-muted);
+            color: var(--text);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
         }
-        .auth-btn:hover { border-color: var(--accent); color: var(--secondary); }
-        .auth-btn.admin-active { background: var(--primary); color: var(--bg); border-color: var(--primary); }
+        .auth-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); border-color: var(--accent); }
+
+        .auth-btn.admin-active { background: var(--primary); color: var(--bg); border-color: var(--primary); box-shadow: 0 5px 18px rgba(44,24,16,0.3); }
         .admin-only { display: none !important; }
         body.is-admin .admin-only { display: flex !important; }
         body.is-admin .admin-btn-inline { display: inline-flex !important; }
@@ -958,15 +958,15 @@
 
     <div class="container">
         <div class="tabs-row">
-            <button class="auth-btn" id="authBtn" onclick="handleAuthClick()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span id="authBtnText">Войти</span>
-            </button>
             <div class="tabs">
                 <button class="tab active" onclick="switchTab('books', event)">📚 Книги</button>
                 <button class="tab" onclick="switchTab('achievements', event)">🏆 Ачивки</button>
                 <button class="tab" onclick="switchTab('stats', event)">📊 Статистика</button>
                 <button class="tab" onclick="switchTab('library', event)">📜 Библиотека</button>
+                <button class="auth-btn" id="authBtn" onclick="handleAuthClick()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <span id="authBtnText">Войти</span>
+                </button>
             </div>
             <button class="duel-toggle-btn active" id="duelToggleBtn" onclick="toggleDuel()" style="display:none">⚔️ Ход дуэли: вкл</button>
         </div>
@@ -1327,38 +1327,38 @@
         }
 
         const achievements = [
-            { id: 1,  name: "Библиотекарь 🏛️",              desc: "Выполнить все ачивки",                                         points: 200, locked: true },
-            { id: 2,  name: "Большой член 💪",               desc: "Прочитать книг больше, чем в прошлом году",                   points: 100, locked: true },
-            { id: 3,  name: "Большие яйца 🎧",               desc: "Прослушать аудиокниг больше, чем в прошлом году",             points: 100, locked: true },
-            { id: 4,  name: "Дурацкий русский 🌍",           desc: "Прочитать книгу на иностранном языке (100+ стр)",             points: 100, locked: true },
-            { id: 5,  name: "Покупай у своих 🇷🇺",           desc: "Прочитать 15 книг от русских авторов",                        points: 100, locked: true },
-            { id: 6,  name: "Художник 🎨",                   desc: "Прочитать 20 книг художественной литературы",                 points: 100, locked: true },
-            { id: 7,  name: "Подарок судьбы 🎁",             desc: "Получить книгу необычным образом и прочитать её",             points: 75,  locked: true },
-            { id: 8,  name: "Глобгалабголаб 📖",             desc: "Прочитать книгу в библиотеке",                                points: 75,  locked: true },
-            { id: 9,  name: "Любитель ушами 👂",             desc: "Прослушать больше 15 аудиокниг",                              points: 75,  locked: true },
-            { id: 10, name: "Любитель глазами 👀",           desc: "Прочитать больше 15 обычных книг",                            points: 75,  locked: true },
-            { id: 11, name: "Богослов ✝️",                   desc: "Прочитать книгу, являющуюся началом религиозного учения",     points: 50,  locked: true },
-            { id: 12, name: "Братья Стругацкие ✍️",         desc: "Прочитать книгу, написанную 2 и более авторами",              points: 50,  locked: true },
-            { id: 13, name: "Назад в будущее ⏳",            desc: "Прочитать книгу, написанную более 500 лет назад",             points: 50,  locked: true },
-            { id: 14, name: "Сотвори себе кумира 🙏",        desc: "Прочитать больше 2 книг от одного автора",                   points: 50,  locked: true },
-            { id: 15, name: "А вы мама, говна поешьте 💩",  desc: "Оценить три книги на низкий балл",                            points: 50,  locked: true },
-            { id: 16, name: "Новокек 🆕",                    desc: "Прочитать книгу выпуска 2023 года и позже",                   points: 50,  locked: true },
-            { id: 17, name: "Порно 🔞",                      desc: "Прочитать роман 18+, запрещенный",                            points: 50,  locked: true },
-            { id: 18, name: "Пасхалко 🥚",                   desc: "Найти упоминание одного человека в 3 книгах",                 points: 50,  locked: true },
-            { id: 19, name: "Вумен момент 👩",               desc: "Прочитать книгу от женщины",                                  points: 50,  locked: true },
-            { id: 20, name: "Собрание 📚",                   desc: "Прочитать сборник рассказов",                                 points: 50,  locked: true },
-            { id: 21, name: "Полит координаты 🏛️",          desc: "Прочитать книгу от политика",                                 points: 50,  locked: true },
-            { id: 22, name: "Подтянул штаны 📜",             desc: "Прочитать сборник стихов",                                    points: 25,  locked: true },
-            { id: 23, name: "Было ваше стало наше 🔄",       desc: "Прочитать книгу оппонента из любого сезона",                  points: 25,  locked: true },
-            { id: 24, name: "Микропенис 📏",                 desc: "Прочитать 5 книг объёмом до 100 страниц",                    points: 25,  locked: true },
-            { id: 25, name: "Мистер Пятёрка 🎓",             desc: "Прочитать книгу из школьной программы",                       points: 25,  locked: true },
-            { id: 26, name: "Хаю-хай 📱",                    desc: "Прочитать книгу блоггера",                                    points: 25,  locked: true },
-            { id: 27, name: "Одобрено 🏅",                   desc: "Прочитать книгу лауреата/номинанта Нобелевской премии",       points: 25,  locked: true },
-            { id: 28, name: "Урыл 🖊️",                       desc: "Прочитать Достоевского или Гоголя",                           points: 25,  locked: true },
-            { id: 29, name: "Кровосток 🩸",                  desc: "Прочитать мемуары, автобиографию писателя",                   points: 25,  locked: true },
-            { id: 30, name: "Терпила 📦",                    desc: "Прочитать книгу от Озона",                                    points: 25,  locked: true },
-            { id: 31, name: "Книга за день ⚡",              desc: "Прочитать книгу за 1 день",                                   points: 25,  locked: true },
-            { id: 32, name: "Киношка 🎬",                    desc: "Прочитать книгу и посмотреть фильм по ней",                   points: 25,  locked: true }
+            { id: 1,  name: "Библиотекарь 🏛️",              desc: "Выполнить все ачивки",                                                      points: 200, locked: true },
+            { id: 2,  name: "Большой член 💪",               desc: "Прочитать книг больше, чем в прошлом году",                                 points: 100, locked: true },
+            { id: 3,  name: "Большие яйца 🎧",               desc: "Прослушать аудиокниг больше, чем в прошлом году",                           points: 100, locked: true },
+            { id: 4,  name: "Дурацкий русский 🌍",           desc: "Добавить книгу на иностранном языке (от 100 страниц)",                      points: 100, locked: true },
+            { id: 5,  name: "Покупай у своих 🇷🇺",           desc: "Добавить 15 книг от русских авторов",                                        points: 100, locked: true },
+            { id: 6,  name: "Художник 🎨",                   desc: "Добавить 20 книг художественной литературы",                                points: 100, locked: true },
+            { id: 7,  name: "Подарок судьбы 🎁",             desc: "Получить книгу необычным образом и прочитать её",                           points: 75,  locked: true },
+            { id: 8,  name: "Глобгалабголаб 📖",             desc: "Прочитать книгу в библиотеке",                                              points: 75,  locked: true },
+            { id: 9,  name: "Любитель ушами 👂",             desc: "Прослушать больше 15 аудиокниг",                                            points: 75,  locked: true },
+            { id: 10, name: "Любитель глазами 👀",           desc: "Прочитать больше 15 обычных книг",                                          points: 75,  locked: true },
+            { id: 11, name: "Богослов ✝️",                   desc: "Добавить книгу, которая является началом религиозного учения",              points: 50,  locked: true },
+            { id: 12, name: "Братья Стругацкие ✍️",         desc: "Добавить книгу, написанную двумя и более авторами",                         points: 50,  locked: true },
+            { id: 13, name: "Назад в будущее ⏳",            desc: "Добавить книгу, написанную более 500 лет назад",                            points: 50,  locked: true },
+            { id: 14, name: "Сотвори себе кумира 🙏",        desc: "Добавить больше 2-х книг от одного автора",                                 points: 50,  locked: true },
+            { id: 15, name: "А вы, мама, говна поешьте 💩", desc: "Оценить 3 книги на оранжевый и ниже",                                        points: 50,  locked: true },
+            { id: 16, name: "Новокек 🆕",                    desc: "Добавить книгу выпуска 2023 года и позже",                                  points: 50,  locked: true },
+            { id: 17, name: "Порно 🔞",                      desc: "Добавить книгу с рейтингом 18+",                                            points: 50,  locked: true },
+            { id: 18, name: "Пасхалко 🥚",                   desc: "Найти упоминание одного человека в 3-х разных книгах",                      points: 50,  locked: true },
+            { id: 19, name: "Вумен момент 👩",               desc: "Добавить книгу от автора-женщины",                                          points: 50,  locked: true },
+            { id: 20, name: "Собрание 📚",                   desc: "Добавить книгу сборник рассказов",                                          points: 50,  locked: true },
+            { id: 21, name: "Полит координаты 🏛️",          desc: "Добавить книгу от политика",                                                points: 50,  locked: true },
+            { id: 22, name: "Подтянул штаны 📜",             desc: "Добавить книгу сборник стихов",                                             points: 25,  locked: true },
+            { id: 23, name: "Было ваше стало наше 🔄",       desc: "Добавить книгу оппонента из любого сезона",                                 points: 25,  locked: true },
+            { id: 24, name: "Микропенис 📏",                 desc: "Добавить 5 книг объёмом до 100 страниц",                                    points: 25,  locked: true },
+            { id: 25, name: "Мистер Пятёрка 🎓",             desc: "Добавить книгу из школьной программы",                                      points: 25,  locked: true },
+            { id: 26, name: "Хаю-хай 📱",                    desc: "Добавить книгу от блогера",                                                 points: 25,  locked: true },
+            { id: 27, name: "Одобрено 🏅",                   desc: "Добавить книгу лауреата или номинанта Нобелевской премии",                  points: 25,  locked: true },
+            { id: 28, name: "Урыл 🖊️",                       desc: "Добавить книгу от Достоевского или Гоголя",                                 points: 25,  locked: true },
+            { id: 29, name: "Кровосток 🩸",                  desc: "Добавить книгу мемуары или автобиографию писателя",                         points: 25,  locked: true },
+            { id: 30, name: "Терпила 📦",                    desc: "Добавить книгу от Озона",                                                   points: 25,  locked: true },
+            { id: 31, name: "Книга за день ⚡",              desc: "Прочитать книгу за один день",                                              points: 25,  locked: true },
+            { id: 32, name: "Киношка 🎬",                    desc: "Добавить книгу и посмотреть фильм по её мотивам",                           points: 25,  locked: true }
         ];
 
         const ACH_OPTIONS = [
@@ -1376,7 +1376,7 @@
             {v:'50|Братья Стругацкие',          l:'✍️ Братья Стругацкие — 50 очков'},
             {v:'50|Назад в будущее',            l:'⏳ Назад в будущее — 50 очков'},
             {v:'50|Сотвори себе кумира',        l:'🙏 Сотвори себе кумира — 50 очков'},
-            {v:'50|А вы мама, говна поешьте',   l:'💩 А вы мама, говна поешьте — 50 очков'},
+            {v:'50|А вы, мама, говна поешьте',   l:'💩 А вы, мама, говна поешьте — 50 очков'},
             {v:'50|Новокек',                    l:'🆕 Новокек — 50 очков'},
             {v:'50|Порно',                      l:'🔞 Порно — 50 очков'},
             {v:'50|Пасхалко',                   l:'🥚 Пасхалко — 50 очков'},
@@ -1434,6 +1434,35 @@
         }
 
         // ── Универсальный write через GET/JSONP — единственный надёжный способ с GitHub Pages ──
+        // ── POST через iframe — для write-операций (addBook, updateBook, deleteBook) ──
+        function sendToAppsScript(action, data) {
+            const payload = JSON.stringify({ ...data, token: adminToken });
+            return new Promise((resolve) => {
+                const iframeName = 'gas_iframe_' + Date.now();
+                const iframe = document.createElement('iframe');
+                iframe.name = iframeName;
+                iframe.style.cssText = 'display:none;position:fixed;width:0;height:0;';
+                document.body.appendChild(iframe);
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = APPS_SCRIPT_URL + '?action=' + action;
+                form.target = iframeName;
+                form.style.display = 'none';
+                const input = document.createElement('input');
+                input.type  = 'hidden';
+                input.name  = 'data';
+                input.value = payload;
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+                setTimeout(() => {
+                    try { document.body.removeChild(form); } catch(e) {}
+                    try { document.body.removeChild(iframe); } catch(e) {}
+                    resolve({});
+                }, 1500);
+            });
+        }
+
         async function gasWrite(action, data) {
             const base = APPS_SCRIPT_URL + '?action=' + action + '&k=' + encodeURIComponent(adminToken || '');
 
@@ -1928,7 +1957,7 @@
             if (!confirm('Удалить книгу?')) return;
             closeModal();
             try {
-                const res = await gasWrite('deleteBook', { num, reader });
+                const res = await sendToAppsScript('deleteBook', { num, reader });
                 console.log('[deleteBook] success:', res);
                 // Сразу убираем из памяти
                 booksData[reader] = booksData[reader].filter(b => String(b.num) !== String(num));
@@ -1993,7 +2022,7 @@
             const savedNum    = isEditing || null;
 
             try {
-                await gasWrite(isEditing ? 'updateBook' : 'addBook', bookData);
+                await sendToAppsScript(isEditing ? 'updateBook' : 'addBook', bookData);
                 closeEditModal();
 
                 // Оптимистично обновляем данные в памяти — не ждём GAS
