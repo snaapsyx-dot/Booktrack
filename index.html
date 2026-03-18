@@ -136,18 +136,14 @@
         }
         .tabs-row {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 16px;
+            gap: 12px;
             margin-bottom: 40px;
-            flex-wrap: wrap;
-            position: relative;
         }
         .tabs-row .tabs { margin-bottom: 0; }
-        /* Duel button floats right without pushing tabs off-center */
         #duelToggleBtn {
-            position: absolute;
-            right: 0;
+            position: static;
         }
 
         /* ── TABS ── */
@@ -732,6 +728,58 @@
         .legend-item:hover { background:var(--bg); }
         .color-box { width:36px; height:36px; border-radius:5px; border:2px solid var(--border); flex-shrink:0; }
 
+        /* ── RULES ── */
+        .rules-page {
+            max-width: 780px;
+            margin: 0 auto;
+        }
+        .rules-intro {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--bg);
+            border-radius: 14px;
+            padding: 28px 34px;
+            font-size: 1.15em;
+            line-height: 1.7;
+            margin-bottom: 28px;
+            box-shadow: 0 8px 30px rgba(44,24,16,0.2);
+        }
+        .rules-intro strong { color: #ffd59e; }
+        .rules-block {
+            background: var(--card);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            padding: 24px 30px;
+            margin-bottom: 16px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .rules-block:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+        .rules-block-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        .rules-block-text {
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 1.05em;
+        }
+        .rules-list {
+            margin: 12px 0 0 0;
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .rules-list li {
+            color: var(--text);
+            font-size: 1.05em;
+            line-height: 1.6;
+        }
+        .rules-list strong { color: var(--secondary); }
+
         /* ── STATS ── */
         .stats-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(290px,1fr)); gap:24px; }
         .stat-card-large { background:var(--card); border-radius:14px; padding:28px; box-shadow:0 5px 18px rgba(0,0,0,0.07); border:2px solid var(--border); }
@@ -821,7 +869,7 @@
             .achievements-grid { grid-template-columns: 1fr; }
             .modal-content { padding: 22px; }
             .tabs-row { flex-direction: column; align-items: center; }
-            #duelToggleBtn { position: static !important; width: 100%; text-align: center; }
+            #duelToggleBtn { width: 100%; text-align: center; }
             .duel-toggle-btn { text-align: center; }
             /* На мобиле detail-row стакается вертикально */
             .detail-row { grid-template-columns: 1fr; gap: 2px; }
@@ -963,6 +1011,7 @@
                 <button class="tab" onclick="switchTab('achievements', event)">🏆 Ачивки</button>
                 <button class="tab" onclick="switchTab('stats', event)">📊 Статистика</button>
                 <button class="tab" onclick="switchTab('library', event)">📜 Библиотека</button>
+                <button class="tab" onclick="switchTab('rules', event)">📋 Правила</button>
                 <button class="auth-btn" id="authBtn" onclick="handleAuthClick()">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     <span id="authBtnText">Войти</span>
@@ -1037,6 +1086,59 @@
         </div>
 
 
+
+        <!-- Rules Section -->
+        <div id="rules" class="content-section">
+            <div class="rules-page">
+                <div class="rules-intro">
+                    Данный сайт посвящён книжной дуэли между <strong>Winnieshe4k0 🐻</strong> и <strong>Артёмом Ж 🐺</strong> — годовому соревнованию по чтению, где каждая страница имеет свою цену.
+                </div>
+
+                <div class="rules-block">
+                    <div class="rules-block-title">📖 Суть</div>
+                    <div class="rules-block-text">Каждый участник читает книги в течение года и зарабатывает кэш — за каждую страницу или минуту аудио начисляется фиксированная сумма. Дополнительно можно получать бонусы за выполнение ачивок. В конце года итоговые счета сравниваются и определяется победитель дуэли.</div>
+                </div>
+
+                <div class="rules-block">
+                    <div class="rules-block-title">💰 Кэш</div>
+                    <div class="rules-block-text">За каждую прочитанную страницу или прослушанную минуту начисляется кэш по фиксированному курсу:</div>
+                    <ul class="rules-list">
+                        <li>📄 1 страница печатной книги = <strong>0.35₽</strong></li>
+                        <li>🎧 1 минута аудиокниги = <strong>0.25₽</strong></li>
+                    </ul>
+                </div>
+
+                <div class="rules-block">
+                    <div class="rules-block-title">🏆 Ачивки</div>
+                    <div class="rules-block-text">Ачивки — дополнительные задания, которые дают бонус к итоговому счёту. Каждое очко ачивки равно одному рублю. Одна книга может принести сразу несколько ачивок. Полный список с условиями получения — на странице «Ачивки».</div>
+                </div>
+
+                <div class="rules-block">
+                    <div class="rules-block-title">🎧 Аудиокниги</div>
+                    <div class="rules-block-text">Аудиокниги считаются отдельно от печатных и учитываются в соответствующей статистике. Длительность в минутах конвертируется в страницы с коэффициентом 0.7143, после чего кэш начисляется по стандартной формуле.</div>
+                </div>
+
+                <div class="rules-block">
+                    <div class="rules-block-title">✅ Допустимые форматы</div>
+                    <div class="rules-block-text">Комиксы не засчитываются. Если книга содержит большое количество иллюстраций — вопрос о её зачёте решается индивидуально. Размер шрифта и нестандартный формат издания на подсчёт страниц не влияют.</div>
+                </div>
+
+                <div class="rules-block">
+                    <div class="rules-block-title">📝 Обязательные поля при добавлении книги</div>
+                    <div class="rules-block-text">К каждой прочитанной книге необходимо указать даты начала и окончания чтения, поставить оценку по шкале и написать рецензию. Книга без этих данных считается незавершённой.</div>
+                </div>
+
+                <div class="rules-block">
+                    <div class="rules-block-title">🧮 Итоговый счёт</div>
+                    <div class="rules-block-text">Итоговый счёт каждого участника складывается из кэша, заработанного за книги, и бонусов от ачивок. Победителем дуэли становится тот, чей итоговый счёт окажется выше на 31 декабря.</div>
+                </div>
+
+                <div class="rules-block">
+                    <div class="rules-block-title">🎖️ Награды года</div>
+                    <div class="rules-block-text">По итогам года в трёх номинациях определяются лучшие книги сезона: лучшая художественная книга, лучшая нехудожественная книга и «Нечитаемо» — худшая книга года.</div>
+                </div>
+            </div>
+        </div>
 
         <!-- Stats Section -->
         <div id="stats" class="content-section">
@@ -1346,7 +1448,7 @@
             { id: 17, name: "Порно 🔞",                      desc: "Добавить книгу с рейтингом 18+",                                            points: 50,  locked: true },
             { id: 18, name: "Пасхалко 🥚",                   desc: "Найти упоминание одного человека в 3-х разных книгах",                      points: 50,  locked: true },
             { id: 19, name: "Вумен момент 👩",               desc: "Добавить книгу от автора-женщины",                                          points: 50,  locked: true },
-            { id: 20, name: "Собрание 📚",                   desc: "Добавить книгу сборник рассказов",                                          points: 50,  locked: true },
+            { id: 20, name: "Собрание 📚",                   desc: "Добавить сборник рассказов",                                          points: 50,  locked: true },
             { id: 21, name: "Полит координаты 🏛️",          desc: "Добавить книгу от политика",                                                points: 50,  locked: true },
             { id: 22, name: "Подтянул штаны 📜",             desc: "Добавить книгу сборник стихов",                                             points: 25,  locked: true },
             { id: 23, name: "Было ваше стало наше 🔄",       desc: "Добавить книгу оппонента из любого сезона",                                 points: 25,  locked: true },
