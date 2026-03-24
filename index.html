@@ -2025,6 +2025,18 @@
             document.getElementById('editModal').classList.add('active');
         }
 
+        // Конвертирует дату из любого формата в YYYY-MM-DD для <input type="date">
+        function toDateInputValue(val) {
+            if (!val) return '';
+            const s = String(val).trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;          // уже YYYY-MM-DD
+            if (s.includes('T')) return s.slice(0, 10);              // ISO datetime
+            const parts = s.split('.');
+            if (parts.length === 3 && parts[2].length === 4)
+                return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+            return s;
+        }
+
         function openEditBookModal(index, reader) {
             closeModal();
             // Сбрасываем форму и editNum — на случай если предыдущая сессия осталась
@@ -2040,17 +2052,31 @@
             document.getElementById('bookAuthor').value = book.author;
             document.getElementById('bookRating').value = book.rating || '';
 
-            // ── БАГ-ФИКС: сначала устанавливаем тип (без сброса страниц), потом заполняем страницы ──
-            setBookType(book.isAudio ? 'audio' : 'print', true);
-            document.getElementById('bookPages').value = book.pages;
+            // ── сначала устанавливаем тип (без сброса страниц), потом заполняем страницы ──
+            const isAudioBook = book.isAudio === true || book.isAudio === 'true';
+            setBookType(isAudioBook ? 'audio' : 'print', true);
+            // Баг 2 фикс: для аудиокниг пересчитываем страницы обратно в минуты
+            const minutesOrPages = isAudioBook
+                ? Math.round(parseInt(book.pages) / 0.7143)
+                : book.pages;
+            document.getElementById('bookPages').value = minutesOrPages;
+            // Обновляем подсказку вручную — программное .value= не вызывает событие input
+            const conv = document.getElementById('pagesConverted');
+            if (isAudioBook && minutesOrPages) {
+                conv.textContent = `≈ ${Math.round(parseFloat(minutesOrPages) * 0.7143)} страниц`;
+                conv.style.display = 'block';
+            } else {
+                conv.style.display = 'none';
+            }
 
             // Восстанавливаем ачивки
             const achList = document.getElementById('achievementsList');
             achList.innerHTML = '';
             getBookAchs(book).forEach(a => addAchievementRow(a.name, a.points));
 
-            document.getElementById('bookDateStart').value = book.dateStart || '';
-            document.getElementById('bookDateEnd').value   = book.dateEnd   || '';
+            // Баг 1 фикс: конвертируем дату в формат YYYY-MM-DD, который ожидает input[type=date]
+            document.getElementById('bookDateStart').value = toDateInputValue(book.dateStart);
+            document.getElementById('bookDateEnd').value   = toDateInputValue(book.dateEnd);
             document.getElementById('bookOpinion').value   = book.opinion   || '';
             setCoverPreview(book.coverData || '');
 
@@ -2083,6 +2109,7 @@
             document.getElementById('editModal').classList.remove('active');
             document.getElementById('bookForm').reset();
             document.getElementById('achievementsList').innerHTML = '';
+            document.getElementById('pagesConverted').style.display = 'none';
             removeCover();
             const btn = document.querySelector('#bookForm button[type="submit"]');
             if (btn) delete btn.dataset.editNum;
